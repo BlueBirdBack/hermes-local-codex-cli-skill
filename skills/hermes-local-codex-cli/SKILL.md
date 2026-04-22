@@ -15,6 +15,16 @@ metadata:
 Use this when the user wants **Hermes to run the installed `codex` binary** on the same machine, rather than using Hermes's built-in `openai-codex` provider.
 
 For a fuller user-facing guide, load `skill_view("hermes-local-codex-cli", "references/orchestration-guide.md")` if the installed copy includes it.
+For exact versions and validation commands, load `skill_view("hermes-local-codex-cli", "references/verification.md")`.
+
+## Source roles
+
+- `README.md` in the standalone repo: install-focused
+- `SKILL.md`: canonical operational instructions for the agent
+- `references/orchestration-guide.md`: fuller user-facing explanation and examples
+- `references/verification.md`: last validated versions and commands checked
+
+Keep the operational rules in `SKILL.md` first; references should extend or verify them, not redefine them.
 
 ## When this matters
 

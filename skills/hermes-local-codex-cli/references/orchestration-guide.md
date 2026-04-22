@@ -17,6 +17,14 @@ This is **not** the same thing as setting Hermes's own provider to `openai-codex
 
 The built-in provider path is documented in [Providers](/docs/integrations/providers). This guide is about the **second path**: Hermes as conductor, local Codex CLI as worker.
 
+## Source roles
+
+- `SKILL.md` is the canonical operational source for the installed skill
+- this guide is the fuller user-facing explanation and example set
+- `references/verification.md` records the last validated Hermes/Codex versions and commands checked
+
+If guidance ever diverges, update `SKILL.md` first, then bring this guide back into sync.
+
 ---
 
 ## When to Use This Pattern

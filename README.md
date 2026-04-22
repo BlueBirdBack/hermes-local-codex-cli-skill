@@ -33,6 +33,13 @@ Then browse or install from the GitHub source.
 skills/hermes-local-codex-cli/SKILL.md
 ```
 
+## Source roles
+
+- `README.md` — install-focused
+- `skills/hermes-local-codex-cli/SKILL.md` — canonical operational source
+- `skills/hermes-local-codex-cli/references/orchestration-guide.md` — fuller user-facing guide
+- `skills/hermes-local-codex-cli/references/verification.md` — last verified versions and commands
+
 ## Typical use
 
 Tell Hermes explicitly:
