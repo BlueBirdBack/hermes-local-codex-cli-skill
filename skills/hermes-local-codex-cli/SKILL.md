@@ -6,6 +6,7 @@ author: Ash
 license: MIT
 metadata:
   hermes:
+    category: autonomous-ai-agents
     tags: [hermes, codex, orchestration, proxy, clash, oauth, subprocess]
     related_skills: [codex, hermes-agent]
 ---
@@ -88,6 +89,42 @@ If repo-local work is requested, also verify the target directory:
 git -C /path/to/repo rev-parse --is-inside-work-tree
 ```
 
+## 60-second smoke test
+
+For a first-run validation, use a fast read-only check before any real repo work:
+
+```bash
+command -v codex
+codex --version
+codex login status
+codex exec -C /path/to/repo -s read-only "Reply with exactly: LOCAL_CODEX_OK plus the current working directory."
+```
+
+Expected signals:
+
+- `codex login status` succeeds
+- Codex runs in the requested directory
+- the final reply proves Hermes used the local Codex CLI path, not just its built-in provider path
+
+For a proxy-routed validation, use the **same env on both auth and execution**, but replace the placeholders with the actual Clash/Mihomo proxy URLs on the machine:
+
+```bash
+export LOCAL_HTTP_PROXY=http://127.0.0.1:<http-port>
+export LOCAL_SOCKS5_PROXY=socks5://127.0.0.1:<socks-port>
+
+HTTPS_PROXY="$LOCAL_HTTP_PROXY" \
+HTTP_PROXY="$LOCAL_HTTP_PROXY" \
+ALL_PROXY="$LOCAL_SOCKS5_PROXY" \
+NO_PROXY=localhost,127.0.0.1 \
+codex login status
+
+HTTPS_PROXY="$LOCAL_HTTP_PROXY" \
+HTTP_PROXY="$LOCAL_HTTP_PROXY" \
+ALL_PROXY="$LOCAL_SOCKS5_PROXY" \
+NO_PROXY=localhost,127.0.0.1 \
+codex exec -C /path/to/repo -s read-only "Reply with exactly: PROXY_OK plus the current working directory."
+```
+
 ## Execution pattern
 
 Run Codex through Hermes terminal calls with `pty=true`.
@@ -151,12 +188,25 @@ Be explicit in user-facing wording:
 
 ## Separate proxy / Clash routing
 
-To route only Codex through Clash or a different egress path, set proxy env vars **on the Codex subprocess only**:
+To route only Codex through Clash or a different egress path, set proxy env vars **on the Codex subprocess only**.
+
+Do **not** copy a port blindly. Use the actual local proxy URLs configured on that machine.
+
+Common pattern:
+
+- `HTTP_PROXY` / `HTTPS_PROXY` → `http://127.0.0.1:<http-port>`
+- `ALL_PROXY` → `socks5://127.0.0.1:<socks-port>`
+
+Example with placeholders:
 
 ```bash
-HTTPS_PROXY=socks5://127.0.0.1:7897 \
-HTTP_PROXY=socks5://127.0.0.1:7897 \
-ALL_PROXY=socks5://127.0.0.1:7897 \
+export LOCAL_HTTP_PROXY=http://127.0.0.1:<http-port>
+export LOCAL_SOCKS5_PROXY=socks5://127.0.0.1:<socks-port>
+
+HTTPS_PROXY="$LOCAL_HTTP_PROXY" \
+HTTP_PROXY="$LOCAL_HTTP_PROXY" \
+ALL_PROXY="$LOCAL_SOCKS5_PROXY" \
+NO_PROXY=localhost,127.0.0.1 \
 codex exec -s read-only "Summarize this repo"
 ```
 
@@ -165,7 +215,7 @@ Important finding:
 - prefer `socks5://`, not `socks://`
 - Hermes code normalizes generic proxy env vars to canonical forms because Python HTTP stacks often reject bare `socks://`
 
-So when documenting or running Clash-style proxy commands, use `socks5://127.0.0.1:PORT`.
+So when documenting or running Clash-style proxy commands, use the actual machine-specific proxy URLs, and prefer `socks5://` for the SOCKS endpoint.
 
 ## Current CLI reality observed
 
@@ -201,7 +251,7 @@ Do not waste turns debugging the repo before fixing auth.
 
 ### Separate-IP Codex execution
 
-“Use the local Codex CLI in /path/to/repo. Route only the Codex subprocess through Clash at `socks5://127.0.0.1:7897`. Keep Hermes on its current provider/network path.”
+“Use the local Codex CLI in /path/to/repo. Route only the Codex subprocess through the machine's actual Clash/Mihomo proxy URLs — `HTTP_PROXY`/`HTTPS_PROXY` as `http://127.0.0.1:<http-port>` and `ALL_PROXY` as `socks5://127.0.0.1:<socks-port>`. Keep Hermes on its current provider/network path.”
 
 ### Separate-account PR review
 

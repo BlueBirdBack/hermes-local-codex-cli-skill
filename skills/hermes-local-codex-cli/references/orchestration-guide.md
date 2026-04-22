@@ -63,6 +63,42 @@ codex-cli 0.118.0
 Logged in using ChatGPT
 ```
 
+## 60-second smoke test
+
+Before real repo work, run a fast read-only validation:
+
+```bash
+command -v codex
+codex --version
+codex login status
+codex exec -C /path/to/repo -s read-only "Reply with exactly: LOCAL_CODEX_OK plus the current working directory."
+```
+
+Expected signals:
+
+- `codex login status` succeeds
+- Codex clearly runs in the requested directory
+- the reply confirms the local CLI path is active for the worker
+
+If you need a proxy-routed validation, use the **same proxy env on both auth and execution**, but replace the placeholders below with the actual local Clash/Mihomo proxy URLs configured on that machine:
+
+```bash
+export LOCAL_HTTP_PROXY=http://127.0.0.1:<http-port>
+export LOCAL_SOCKS5_PROXY=socks5://127.0.0.1:<socks-port>
+
+HTTPS_PROXY="$LOCAL_HTTP_PROXY" \
+HTTP_PROXY="$LOCAL_HTTP_PROXY" \
+ALL_PROXY="$LOCAL_SOCKS5_PROXY" \
+NO_PROXY=localhost,127.0.0.1 \
+codex login status
+
+HTTPS_PROXY="$LOCAL_HTTP_PROXY" \
+HTTP_PROXY="$LOCAL_HTTP_PROXY" \
+ALL_PROXY="$LOCAL_SOCKS5_PROXY" \
+NO_PROXY=localhost,127.0.0.1 \
+codex exec -C /path/to/repo -s read-only "Reply with exactly: PROXY_OK plus the current working directory."
+```
+
 ---
 
 ## Mental Model
@@ -213,12 +249,25 @@ Because Codex is launched as a subprocess, Hermes can give that subprocess a dif
 
 ### The simplest pattern
 
-Set proxy env vars **only on the Codex command**:
+Set proxy env vars **only on the Codex command**.
+
+Do **not** copy a port blindly. Use the actual local proxy URLs configured on that machine.
+
+Common pattern:
+
+- `HTTP_PROXY` / `HTTPS_PROXY` → `http://127.0.0.1:<http-port>`
+- `ALL_PROXY` → `socks5://127.0.0.1:<socks-port>`
+
+Example with placeholders:
 
 ```bash
-HTTPS_PROXY=socks5://127.0.0.1:7897 \
-HTTP_PROXY=socks5://127.0.0.1:7897 \
-ALL_PROXY=socks5://127.0.0.1:7897 \
+export LOCAL_HTTP_PROXY=http://127.0.0.1:<http-port>
+export LOCAL_SOCKS5_PROXY=socks5://127.0.0.1:<socks-port>
+
+HTTPS_PROXY="$LOCAL_HTTP_PROXY" \
+HTTP_PROXY="$LOCAL_HTTP_PROXY" \
+ALL_PROXY="$LOCAL_SOCKS5_PROXY" \
+NO_PROXY=localhost,127.0.0.1 \
 codex exec -s read-only "Summarize this repo"
 ```
 
@@ -226,7 +275,7 @@ When Hermes orchestrates it, ask for the same thing explicitly:
 
 ```text
 Use the local Codex CLI in /opt/work/hermes-agent.
-Route only the Codex subprocess through Clash at socks5://127.0.0.1:7897.
+Route only the Codex subprocess through the machine's actual Clash/Mihomo proxy URLs.
 Keep Hermes itself on its current provider and current network path.
 Run:
 - `codex login status`
@@ -238,11 +287,7 @@ Return the final result only.
 
 Hermes normalizes generic proxy env vars like `HTTP_PROXY`, `HTTPS_PROXY`, and `ALL_PROXY` internally. In `utils.py`, Hermes rewrites `socks://127.0.0.1:PORT` to `socks5://127.0.0.1:PORT` because mixed Python HTTP stacks commonly require the explicit `socks5://` scheme.
 
-So if your Clash setup exports `socks://127.0.0.1:7897`, prefer using this in docs, scripts, and inline commands:
-
-```text
-socks5://127.0.0.1:7897
-```
+So if your Clash setup exports `socks://127.0.0.1:<socks-port>`, prefer using the corresponding `socks5://...` URL in docs, scripts, and inline commands.
 
 That is the safest form when Hermes and other tools share the same shell environment.
 
@@ -265,7 +310,7 @@ Return the result and any blockers.
 
 ```text
 Use the local Codex CLI as a worker in /path/to/repo.
-Route only Codex through Clash at socks5://127.0.0.1:7897.
+Route only Codex through the machine's actual Clash/Mihomo proxy URLs.
 Run:
 - `codex exec --full-auto "Implement a docs page for X. Do not commit or push. Run the relevant tests if any."`
 Then inspect the changed files and summarize exactly what Codex changed.
@@ -278,7 +323,7 @@ Use the local Codex CLI, not Hermes's built-in Codex provider.
 Run in /path/to/repo:
 - `codex login status`
 - `codex review --base origin/main`
-Route only Codex through socks5://127.0.0.1:7897.
+Route only Codex through the machine's actual Clash/Mihomo proxy URLs.
 Return a concise review summary with concrete findings.
 ```
 

@@ -1,55 +1,49 @@
 # hermes-local-codex-cli-skill
 
-A Hermes skill for using **Hermes as the orchestrator** and the **local `codex` CLI as the worker**.
+Hermes orchestrates. The local `codex` CLI does the work.
 
-This skill is for the case where you want Hermes to run the installed `codex` binary on the same machine, instead of using Hermes's built-in `openai-codex` provider path.
+Use this when you want Hermes to run the installed `codex` binary on the same machine instead of Hermes's built-in `openai-codex` provider.
 
-## What it covers
-
-- separate auth stores: `~/.hermes/auth.json` vs `~/.codex/auth.json`
-- separate egress / Clash routing for the Codex subprocess
-- keeping the main Hermes session responsive
-- task-shape gating: when Hermes should hand work off to Codex
-- Codex effort selection: `medium` vs `high` vs `xhigh`
-- auth failure recognition (`refresh_token_reused`, `token_expired`, `401`)
-
-## Install directly from GitHub
+## Install
 
 ```bash
-hermes skills install BlueBirdBack/hermes-local-codex-cli-skill/skills/hermes-local-codex-cli
+hermes skills inspect BlueBirdBack/hermes-local-codex-cli-skill/skills/hermes-local-codex-cli
+hermes skills install BlueBirdBack/hermes-local-codex-cli-skill/skills/hermes-local-codex-cli --force --category autonomous-ai-agents
 ```
 
-## Add as a custom tap
+Use `--category autonomous-ai-agents` so the installed skill stays grouped correctly in `hermes skills list`.
+
+## Optional tap
 
 ```bash
 hermes skills tap add BlueBirdBack/hermes-local-codex-cli-skill
+hermes skills inspect BlueBirdBack/hermes-local-codex-cli-skill/skills/hermes-local-codex-cli
 ```
 
-Then browse or install from the GitHub source.
+## 60-second smoke test
 
-## Skill path in this repo
-
-```text
-skills/hermes-local-codex-cli/SKILL.md
+```bash
+codex login status
+codex exec -C /path/to/repo -s read-only "Reply with exactly: LOCAL_CODEX_OK plus the current working directory."
 ```
 
-## Source roles
+Expected:
+- `codex login status` succeeds
+- output contains `LOCAL_CODEX_OK`
+- output shows the repo path you passed with `-C`
 
-- `README.md` — install-focused
-- `skills/hermes-local-codex-cli/SKILL.md` — canonical operational source
-- `skills/hermes-local-codex-cli/references/orchestration-guide.md` — fuller user-facing guide
-- `skills/hermes-local-codex-cli/references/verification.md` — last verified versions and commands
+## Proxy note
 
-## Typical use
+Use the real local proxy URLs on that machine. Do not hardcode a port from an example.
 
-Tell Hermes explicitly:
+- HTTP: `http://127.0.0.1:<http-port>`
+- SOCKS5: `socks5://127.0.0.1:<socks-port>`
 
-```text
-Use the local Codex CLI, not Hermes's built-in Codex provider.
-Use /path/to/repo as the working directory.
-Route only the Codex subprocess through Clash at socks5://127.0.0.1:7897.
-Run a read-only probe first, then report back.
-```
+## Files
+
+- `skills/hermes-local-codex-cli/SKILL.md` — canonical instructions
+- `skills/hermes-local-codex-cli/references/orchestration-guide.md` — fuller guide
+- `skills/hermes-local-codex-cli/references/verification.md` — last verified commands
 
 ## License
 
